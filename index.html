@@ -3,292 +3,470 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OrderBlock Live Terminal</title>
+  <title>OrderBlock Terminal - order-block.com</title>
+  <!-- Official Lightweight Charts -->
+  <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
   <style>
     :root {
-      --bg: #0e121a;
-      --card-bg: #151b27;
-      --border: #232d42;
-      --bull: #10b981;
-      --bull-soft: rgba(16, 185, 129, 0.15);
-      --bear: #ef4444;
-      --bear-soft: rgba(239, 68, 68, 0.15);
-      --text: #e2e8f0;
-      --text-muted: #94a3b8;
+      --bg: #ecefe6;
+      --panel-bg: #f4f6f0;
+      --card-bg: #ffffff;
+      --border: #d4dad0;
+      --bull-green: #2e8b57;
+      --bull-bg: #eaf6ee;
+      --bull-border: #bce5cb;
+      --bear-red: #d32f2f;
+      --bear-bg: #fdeeee;
+      --bear-border: #f8c8c8;
+      --text: #1a1e24;
+      --text-muted: #5c6873;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); padding: 12px; }
 
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; }
+    body { background-color: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+    /* Top Nav */
     header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 12px;
+      background: #f7f9f5;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
     }
-    .brand { font-size: 1.2rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
-    .brand span { color: var(--bear); }
-    .live-badge {
-      background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444;
-      font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; text-transform: uppercase;
-    }
+    .brand-title { font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+    .badge-live { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
 
-    /* Layout */
-    .terminal-grid {
+    /* Main Container */
+    .terminal-container {
+      flex: 1;
       display: grid;
-      grid-template-columns: 260px 1fr 340px;
-      gap: 12px;
-      height: calc(100vh - 70px);
-    }
-    @media(max-width: 1024px) {
-      .terminal-grid { grid-template-columns: 1fr; height: auto; }
+      grid-template-columns: 480px 1fr 440px;
+      gap: 10px;
+      padding: 10px;
+      overflow: hidden;
+      height: calc(100vh - 42px);
     }
 
-    .panel {
-      background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px;
-      padding: 12px; overflow-y: auto; display: flex; flex-direction: column;
+    /* Left Panel: Liquidity Multi-Line Flow */
+    .flow-panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+      position: relative;
     }
-    .panel-title { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+    .flow-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .ratio-counter {
+      text-align: right;
+      line-height: 1.2;
+    }
+    .ratio-counter .bull { color: var(--bull-green); font-weight: 800; font-size: 1.15rem; }
+    .ratio-counter .bear { color: var(--bear-red); font-weight: 800; font-size: 1.15rem; }
 
-    /* Market Breadth */
-    .ratio-box {
-      display: flex; gap: 8px; margin-bottom: 14px;
+    .chart-canvas-wrap {
+      flex: 1;
+      background: #f9fbf7;
+      border: 1px solid var(--border);
+      position: relative;
     }
-    .ratio-card {
-      flex: 1; padding: 10px; border-radius: 6px; text-align: center;
-    }
-    .ratio-card.bull { background: var(--bull-soft); border: 1px solid var(--bull); color: var(--bull); }
-    .ratio-card.bear { background: var(--bear-soft); border: 1px solid var(--bear); color: var(--bear); }
-    .ratio-count { font-size: 1.6rem; font-weight: 800; }
-    .ratio-label { font-size: 0.7rem; text-transform: uppercase; font-weight: 600; }
 
-    /* Sector Items */
-    .sector-item {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 8px; border-radius: 4px; margin-bottom: 6px; font-size: 0.82rem; background: #1a2233;
+    /* Center Panel: Sector Stock Tiles */
+    .grid-panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
-    .sector-item.bearish-heavy { border-left: 3px solid var(--bear); }
-    .sector-item.bullish-heavy { border-left: 3px solid var(--bull); }
+    .section-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      padding-bottom: 4px;
+      border-bottom: 1px solid #dce2d7;
+    }
 
-    /* Stock List */
-    .stock-card {
-      padding: 10px; border-radius: 6px; background: #1a2233; margin-bottom: 8px;
-      cursor: pointer; transition: all 0.2s; border: 1px solid transparent;
+    .tile-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
     }
-    .stock-card:hover, .stock-card.active { border-color: #38bdf8; background: #222d42; }
-    .stock-header { display: flex; justify-content: space-between; font-weight: 600; font-size: 0.9rem; }
-    .stock-meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
-    .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
-    .badge.bear { background: var(--bear); color: #fff; }
-    .badge.bull { background: var(--bull); color: #fff; }
 
-    /* Chart & Orderblock Zone */
-    .chart-container { flex: 1; display: flex; flex-direction: column; }
-    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .ob-details {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; background: #0f141f;
-      padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 0.8rem;
+    .stock-tile {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.15s ease-in-out;
+      position: relative;
     }
-    .ob-label { color: var(--text-muted); display: block; font-size: 0.7rem; }
-    .ob-val { font-weight: 700; color: #fff; }
-    
-    /* Interactive SVG Canvas */
-    .svg-wrapper {
-      flex: 1; min-height: 380px; background: #0a0e17; border: 1px solid var(--border);
-      border-radius: 6px; position: relative; overflow: hidden;
+    .stock-tile:hover {
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      border-color: #94a3b8;
     }
-    svg { width: 100%; height: 100%; }
-    .ob-zone { fill: rgba(239, 68, 68, 0.25); stroke: var(--bear); stroke-dasharray: 4; }
-    .candle-green { fill: var(--bull); }
-    .candle-red { fill: var(--bear); }
-    .wick { stroke-width: 1.5; }
-    .wick-green { stroke: var(--bull); }
-    .wick-red { stroke: var(--bear); }
+    .stock-tile.active {
+      border: 2px solid #0284c7 !important;
+    }
+    .stock-tile.bearish {
+      background: var(--bear-bg);
+      border-color: var(--bear-border);
+    }
+    .stock-tile.bullish {
+      background: var(--bull-bg);
+      border-color: var(--bull-border);
+    }
+    .tile-row-1 {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .tile-sym { font-weight: 700; font-size: 0.85rem; }
+    .tile-chg { font-size: 0.8rem; font-weight: 700; }
+    .tile-row-2 {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .tile-tag {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+    .tag-bear { background: #fee2e2; color: var(--bear-red); }
+    .tag-bull { background: #dcfce7; color: var(--bull-green); }
+
+    /* Right Panel: Detailed Order Block Popup/Terminal */
+    .detail-panel {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+    }
+    .detail-header {
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+    }
+    .dh-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .dh-sym { font-size: 1.3rem; font-weight: 800; color: #0f172a; }
+    .dh-price { font-size: 1.15rem; font-weight: 800; }
+    .dh-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Metric Grid (matching video) */
+    .metric-table {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 8px;
+      font-size: 0.75rem;
+      margin-bottom: 8px;
+    }
+    .metric-row { display: flex; justify-content: space-between; }
+    .metric-lbl { color: var(--text-muted); }
+    .metric-val { font-weight: 700; }
+
+    /* Real Candlestick Chart Window */
+    #detail-candlestick-chart {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      min-height: 250px;
+    }
   </style>
 </head>
 <body>
 
   <header>
-    <div class="brand">ORDER<span>BLOCK</span> TERMINAL <div class="live-badge">● Live F&O Tape</div></div>
-    <div id="timestamp" style="font-size: 0.8rem; color: var(--text-muted);">10:30 AM IST</div>
+    <div class="brand-title">
+      <span>OrderBlock™</span>
+      <span style="font-weight: 400; color: #64748b;">| order-block.com</span>
+      <span class="badge-live">● LIVE TERMINAL</span>
+    </div>
+    <div style="font-size: 0.75rem; color: #64748b;">
+      F&O Liquidity & Order Block Scanner
+    </div>
   </header>
 
-  <div class="terminal-grid">
-    <!-- Left: Sector & Breadth Flow -->
-    <div class="panel">
-      <div class="panel-title">Institutional Flow</div>
-      <div class="ratio-box">
-        <div class="ratio-card bull">
-          <div class="ratio-count" id="bull-count">31</div>
-          <div class="ratio-label">▲ Bullish</div>
-        </div>
-        <div class="ratio-card bear">
-          <div class="ratio-count" id="bear-count">182</div>
-          <div class="ratio-label">▼ Bearish</div>
-        </div>
-      </div>
+  <div class="terminal-container">
 
-      <div class="panel-title" style="margin-top: 10px;">Top Weak / Strong Sectors</div>
-      <div id="sector-list">
-        <!-- Injected via JS -->
-      </div>
-    </div>
-
-    <!-- Center: Order Block Chart & Execution View -->
-    <div class="panel chart-container">
-      <div class="chart-header">
+    <!-- LEFT PANEL: Multi-stock Liquidity Tracker (Flow Canvas) -->
+    <div class="flow-panel">
+      <div class="flow-header">
         <div>
-          <h2 id="active-symbol" style="font-size: 1.2rem;">HEROMOTOCO</h2>
-          <span id="active-price" style="font-size: 0.9rem; color: var(--bear); font-weight: 600;">₹5,153.50 (-1.46%)</span>
+          <div style="font-size: 0.8rem; font-weight: 700;">CNX F&O MARKET X-RAY</div>
+          <div style="font-size: 0.7rem; color: var(--text-muted);">Cumulative Liquidity Traps</div>
         </div>
-        <div style="font-size: 0.8rem; color: var(--text-muted);">
-          Timeframe: <strong>5-Min Retest</strong>
+        <div class="ratio-counter">
+          <div><span style="font-size: 0.7rem; color: #64748b;">▲ BULLISH: </span><span class="bull">31</span></div>
+          <div><span style="font-size: 0.7rem; color: #64748b;">▼ BEARISH: </span><span class="bear">182</span></div>
         </div>
       </div>
-
-      <div class="ob-details">
-        <div><span class="ob-label">Build-Up:</span><span class="ob-val" id="stat-oi">Short Build-Up</span></div>
-        <div><span class="ob-label">VWAP:</span><span class="ob-val" id="stat-vwap">5,177.70</span></div>
-        <div><span class="ob-label">Order Block Zone:</span><span class="ob-val" style="color:#f87171" id="stat-ob">5,185 - 5,197</span></div>
-        <div><span class="ob-label">Status:</span><span class="ob-val" id="stat-status" style="color:var(--bear)">Below Zone (Sell Retest)</span></div>
-      </div>
-
-      <div class="svg-wrapper" id="chart-viewport">
-        <!-- Dynamic Candlestick & Orderblock SVG Renderer -->
+      <div class="chart-canvas-wrap">
+        <canvas id="flowCanvas"></canvas>
       </div>
     </div>
 
-    <!-- Right: High-Conviction Stock Scanner -->
-    <div class="panel">
-      <div class="panel-title">Order Block Radar (Ranked by Liquidity)</div>
-      <div id="stock-list">
-        <!-- Injected via JS -->
-      </div>
+    <!-- CENTER PANEL: Top 20 Stocks & Auto-Sector Grouping -->
+    <div class="grid-panel">
+      <div class="section-label">🔴 AUTO SECTOR (6 STOCKS HEAVY SHORT)</div>
+      <div class="tile-grid" id="auto-grid"></div>
+
+      <div class="section-label" style="margin-top: 10px;">🔴 TOP F&O SELLING (LIQUIDITY TRAPS)</div>
+      <div class="tile-grid" id="bear-grid"></div>
+
+      <div class="section-label" style="margin-top: 10px;">🟢 TOP BUYING / RECOVERY</div>
+      <div class="tile-grid" id="bull-grid"></div>
     </div>
+
+    <!-- RIGHT PANEL: Order Block Retest Card & Candlestick Viewer -->
+    <div class="detail-panel">
+      <div class="detail-header">
+        <div class="dh-top">
+          <div class="dh-sym" id="dt-symbol">HEROMOTOCO</div>
+          <div class="dh-price" id="dt-price" style="color: var(--bear-red);">₹5,153.50</div>
+        </div>
+        <div class="dh-sub" id="dt-sub">HEROMOTOCO · AUTO · RANK #0.7 / 182</div>
+      </div>
+
+      <div class="metric-table">
+        <div class="metric-row"><span class="metric-lbl">OI Change:</span><span class="metric-val" id="dt-oi">+7.6% (Short Build-Up)</span></div>
+        <div class="metric-row"><span class="metric-lbl">VWAP:</span><span class="metric-val" id="dt-vwap">₹5,177.70</span></div>
+        <div class="metric-row"><span class="metric-lbl">Zone (OB):</span><span class="metric-val" style="color: var(--bear-red);" id="dt-ob">5,191.70 - 5,206.10</span></div>
+        <div class="metric-row"><span class="metric-lbl">R : R Ratio:</span><span class="metric-val">1 : 5.7 RULE</span></div>
+      </div>
+
+      <!-- Live TradingView Lightweight Chart Container -->
+      <div id="detail-candlestick-chart"></div>
+    </div>
+
   </div>
 
   <script>
-    // Data structures mirroring the video's terminal
-    const stocks = [
-      { sym: "HEROMOTOCO", ltp: 5153.50, chg: -1.46, sector: "AUTO", dir: "BEARISH", oi: "Short Build-Up", vwap: 5177.70, obLow: 5185, obHigh: 5197 },
-      { sym: "EICHERMOT",  ltp: 4890.00, chg: -2.43, sector: "AUTO", dir: "BEARISH", oi: "Short Build-Up", vwap: 4940.00, obLow: 4960, obHigh: 4985 },
-      { sym: "TVSMOTOR",   ltp: 2410.20, chg: -1.80, sector: "AUTO", dir: "BEARISH", oi: "Short Build-Up", vwap: 2435.00, obLow: 2445, obHigh: 2460 },
-      { sym: "SRF",        ltp: 2305.80, chg: -5.22, sector: "CHEMICALS", dir: "BEARISH", oi: "Aggressive Short", vwap: 2360.00, obLow: 2380, obHigh: 2410 },
-      { sym: "NYKAA",      ltp: 182.40,  chg: -2.10, sector: "NEW AGE", dir: "BEARISH", oi: "Long Unwinding", vwap: 186.20, obLow: 187, obHigh: 189 },
-      { sym: "PERSISTENT", ltp: 5410.00, chg: +2.15, sector: "IT", dir: "BULLISH", oi: "Long Build-Up", vwap: 5360.00, obLow: 5340, obHigh: 5355 },
-      { sym: "DABUR",      ltp: 548.00,  chg: +1.10, sector: "FMCG", dir: "BULLISH", oi: "Long Build-Up", vwap: 544.00, obLow: 542, obHigh: 545 }
+    // Stock data matching the video's exact state
+    const stockData = [
+      // Auto Sector Focus (Highlighted in the reel)
+      { sym: "HEROMOTOCO", ltp: 5153.50, chg: -1.46, sector: "AUTO", dir: "bear", oi: "+7.6% (Short Build-Up)", vwap: 5177.70, obLow: 5191.70, obHigh: 5206.10, basePrice: 5200 },
+      { sym: "EICHERMOT",  ltp: 4890.00, chg: -2.43, sector: "AUTO", dir: "bear", oi: "+5.1% (Short Build-Up)", vwap: 4930.00, obLow: 4950.00, obHigh: 4975.00, basePrice: 4950 },
+      { sym: "TVSMOTOR",   ltp: 2410.20, chg: -1.80, sector: "AUTO", dir: "bear", oi: "+4.2% (Short Build-Up)", vwap: 2435.00, obLow: 2445.00, obHigh: 2460.00, basePrice: 2450 },
+      { sym: "MARUTI",     ltp: 11840.0, chg: -0.95, sector: "AUTO", dir: "bear", oi: "+2.8% (Short Build-Up)", vwap: 11920.0, obLow: 11950.0, obHigh: 12010.0, basePrice: 11950 },
+      { sym: "FORCEMOT",   ltp: 6840.00, chg: -3.10, sector: "AUTO", dir: "bear", oi: "+6.8% (Short Build-Up)", vwap: 6980.00, obLow: 7010.00, obHigh: 7060.00, basePrice: 7000 },
+      { sym: "SONACOMS",   ltp: 615.40,  chg: -1.75, sector: "AUTO", dir: "bear", oi: "+3.4% (Short Build-Up)", vwap: 622.00, obLow: 625.00, obHigh: 630.00, basePrice: 625 },
+
+      // Other Top Short Candidates
+      { sym: "SRF",        ltp: 2305.80, chg: -5.22, sector: "CHEM", dir: "bear", oi: "+11.4% (Heavy Short)", vwap: 2380.00, obLow: 2390.00, obHigh: 2420.00, basePrice: 2400 },
+      { sym: "NYKAA",      ltp: 182.40,  chg: -2.10, sector: "TECH", dir: "bear", oi: "-3.2% (Unwinding)", vwap: 186.20, obLow: 187.00, obHigh: 189.00, basePrice: 188 },
+      { sym: "CUMMINSIND", ltp: 3410.00, chg: -3.73, sector: "ENGR", dir: "bear", oi: "+5.9% (Short Build-Up)", vwap: 3480.00, obLow: 3500.00, obHigh: 3530.00, basePrice: 3500 },
+      { sym: "POLYCAВ",    ltp: 6415.00, chg: -2.25, sector: "CABLES", dir: "bear", oi: "+4.1% (Short Build-Up)", vwap: 6490.00, obLow: 6520.00, obHigh: 6550.00, basePrice: 6500 },
+
+      // Bullish Stocks (Top of Board)
+      { sym: "PERSISTENT", ltp: 5410.00, chg: +2.15, sector: "IT", dir: "bull", oi: "+8.2% (Long Build-Up)", vwap: 5360.00, obLow: 5330.00, obHigh: 5345.00, basePrice: 5330 },
+      { sym: "DABUR",      ltp: 548.00,  chg: +1.10, sector: "FMCG", dir: "bull", oi: "+4.1% (Long Build-Up)", vwap: 544.00, obLow: 541.00, obHigh: 543.00, basePrice: 542 },
+      { sym: "NHPC",       ltp: 94.60,   chg: +1.45, sector: "POWER", dir: "bull", oi: "+6.0% (Long Build-Up)", vwap: 93.80, obLow: 93.00, obHigh: 93.50, basePrice: 93 }
     ];
 
-    const sectors = [
-      { name: "AUTO (6 Stocks Selling)", flow: "-2.85%", dir: "bear" },
-      { name: "CHEMICALS", flow: "-2.10%", dir: "bear" },
-      { name: "METALS", flow: "-1.75%", dir: "bear" },
-      { name: "IT", flow: "+1.35%", dir: "bull" },
-      { name: "FMCG", flow: "+0.45%", dir: "bull" }
-    ];
+    let selectedStock = stockData[0];
+    let chart, candleSeries, obZoneLine1, obZoneLine2;
 
-    let currentStock = stocks[0];
+    // Render Grid Cards
+    function renderGrids() {
+      const autoGrid = document.getElementById('auto-grid');
+      const bearGrid = document.getElementById('bear-grid');
+      const bullGrid = document.getElementById('bull-grid');
 
-    function init() {
-      renderSectors();
-      renderStockList();
-      renderChart(currentStock);
-      document.getElementById('timestamp').innerText = new Date().toLocaleTimeString('en-IN') + " (Live)";
-    }
+      autoGrid.innerHTML = ''; bearGrid.innerHTML = ''; bullGrid.innerHTML = '';
 
-    function renderSectors() {
-      const container = document.getElementById('sector-list');
-      container.innerHTML = sectors.map(s => `
-        <div class="sector-item ${s.dir === 'bear' ? 'bearish-heavy' : 'bullish-heavy'}">
-          <span>${s.name}</span>
-          <strong style="color: ${s.dir === 'bear' ? 'var(--bear)' : 'var(--bull)'}">${s.flow}</strong>
-        </div>
-      `).join('');
-    }
-
-    function renderStockList() {
-      const container = document.getElementById('stock-list');
-      container.innerHTML = stocks.map((s, idx) => `
-        <div class="stock-card ${s.sym === currentStock.sym ? 'active' : ''}" onclick="selectStock(${idx})">
-          <div class="stock-header">
-            <span>${s.sym}</span>
-            <span style="color: ${s.chg < 0 ? 'var(--bear)' : 'var(--bull)'}">${s.chg}%</span>
+      stockData.forEach(stk => {
+        const tile = document.createElement('div');
+        tile.className = `stock-tile ${stk.dir === 'bear' ? 'bearish' : 'bullish'} ${stk.sym === selectedStock.sym ? 'active' : ''}`;
+        tile.onclick = () => selectStock(stk);
+        tile.innerHTML = `
+          <div class="tile-row-1">
+            <span class="tile-sym">${stk.sym}</span>
+            <span class="tile-chg" style="color: ${stk.dir === 'bear' ? 'var(--bear-red)' : 'var(--bull-green)'}">${stk.chg > 0 ? '+' : ''}${stk.chg}%</span>
           </div>
-          <div class="stock-meta">
-            <span>${s.sector}</span>
-            <span class="badge ${s.dir === 'BEARISH' ? 'bear' : 'bull'}">${s.dir}</span>
+          <div class="tile-row-2">
+            <span>${stk.sector}</span>
+            <span class="tile-tag ${stk.dir === 'bear' ? 'tag-bear' : 'tag-bull'}">${stk.dir === 'bear' ? 'SHORT BUILD-UP' : 'LONG BUILD-UP'}</span>
           </div>
-        </div>
-      `).join('');
-    }
-
-    function selectStock(index) {
-      currentStock = stocks[index];
-      document.getElementById('active-symbol').innerText = currentStock.sym;
-      document.getElementById('active-price').innerText = `₹${currentStock.ltp.toFixed(2)} (${currentStock.chg}%)`;
-      document.getElementById('active-price').style.color = currentStock.chg < 0 ? 'var(--bear)' : 'var(--bull)';
-      document.getElementById('stat-oi').innerText = currentStock.oi;
-      document.getElementById('stat-vwap').innerText = currentStock.vwap.toFixed(2);
-      document.getElementById('stat-ob').innerText = `${currentStock.obLow} - ${currentStock.obHigh}`;
-      renderStockList();
-      renderChart(currentStock);
-    }
-
-    function renderChart(stock) {
-      const vp = document.getElementById('chart-viewport');
-      const w = vp.clientWidth || 600;
-      const h = vp.clientHeight || 380;
-
-      // Generate 5-min candles simulating price drop from the Order Block
-      const candles = [
-        { o: 5192, h: 5198, l: 5188, c: 5196, type: 'bull' }, // The original candle inside OB
-        { o: 5195, h: 5196, l: 5170, c: 5172, type: 'bear' }, // Impulse break
-        { o: 5172, h: 5175, l: 5160, c: 5164, type: 'bear' },
-        { o: 5164, h: 5186, l: 5162, c: 5184, type: 'bull' }, // Retest into OB bottom
-        { o: 5184, h: 5185, l: 5158, c: 5160, type: 'bear' }, // Rejection
-        { o: 5160, h: 5162, l: 5145, c: 5148, type: 'bear' },
-        { o: 5148, h: 5155, l: 5142, c: 5153.5, type: 'bull' }
-      ];
-
-      const minP = 5130;
-      const maxP = 5210;
-      const scaleY = (p) => h - ((p - minP) / (maxP - minP)) * (h - 40) - 20;
-      const colW = (w - 80) / candles.length;
-
-      // OB zone boundaries
-      const obTop = scaleY(stock.obHigh);
-      const obBottom = scaleY(stock.obLow);
-      const obHeight = Math.abs(obBottom - obTop);
-
-      let svgHTML = `
-        <svg viewBox="0 0 ${w} ${h}">
-          <!-- Order Block Supply Zone -->
-          <rect x="20" y="${obTop}" width="${w - 40}" height="${obHeight}" class="ob-zone" />
-          <text x="30" y="${obTop + 16}" fill="#f87171" font-size="12" font-weight="bold">BEARISH ORDER BLOCK (${stock.obLow} - ${stock.obHigh})</text>
-
-          <!-- Candles -->
-      `;
-
-      candles.forEach((c, i) => {
-        const x = 50 + i * colW;
-        const cyO = scaleY(c.o);
-        const cyC = scaleY(c.c);
-        const cyH = scaleY(c.h);
-        const cyL = scaleY(c.l);
-        const isBull = c.c >= c.o;
-        const colorClass = isBull ? 'green' : 'red';
-        const topBody = Math.min(cyO, cyC);
-        const bodyH = Math.max(Math.abs(cyO - cyC), 2);
-
-        svgHTML += `
-          <line x1="${x + 12}" y1="${cyH}" x2="${x + 12}" y2="${cyL}" class="wick wick-${colorClass}" />
-          <rect x="${x}" y="${topBody}" width="24" height="${bodyH}" class="candle-${colorClass}" rx="2" />
         `;
+
+        if (stk.sector === 'AUTO') {
+          autoGrid.appendChild(tile);
+        } else if (stk.dir === 'bear') {
+          bearGrid.appendChild(tile);
+        } else {
+          bullGrid.appendChild(tile);
+        }
+      });
+    }
+
+    // Select Stock and Refresh Chart View
+    function selectStock(stk) {
+      selectedStock = stk;
+      document.getElementById('dt-symbol').innerText = stk.sym;
+      document.getElementById('dt-price').innerText = `₹${stk.ltp.toFixed(2)}`;
+      document.getElementById('dt-price').style.color = stk.dir === 'bear' ? 'var(--bear-red)' : 'var(--bull-green)';
+      document.getElementById('dt-sub').innerText = `${stk.sym} · ${stk.sector} · ${stk.dir === 'bear' ? 'BEARISH ZONE' : 'BULLISH ZONE'}`;
+      document.getElementById('dt-oi').innerText = stk.oi;
+      document.getElementById('dt-vwap').innerText = `₹${stk.vwap.toFixed(2)}`;
+      document.getElementById('dt-ob').innerText = `${stk.obLow.toFixed(2)} - ${stk.obHigh.toFixed(2)}`;
+      document.getElementById('dt-ob').style.color = stk.dir === 'bear' ? 'var(--bear-red)' : 'var(--bull-green)';
+
+      renderGrids();
+      loadChartData(stk);
+    }
+
+    // Init TradingView Lightweight Chart
+    function initChart() {
+      const container = document.getElementById('detail-candlestick-chart');
+      chart = LightweightCharts.createChart(container, {
+        layout: { background: { color: '#ffffff' }, textColor: '#475569' },
+        grid: { vertLines: { color: '#f1f5f9' }, horzLines: { color: '#f1f5f9' } },
+        crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+        rightPriceScale: { borderColor: '#cbd5e1' },
+        timeScale: { borderColor: '#cbd5e1', timeVisible: true, secondsVisible: false }
       });
 
-      svgHTML += `</svg>`;
-      vp.innerHTML = svgHTML;
+      candleSeries = chart.addCandlestickSeries({
+        upColor: '#10b981', downColor: '#ef4444',
+        borderUpColor: '#10b981', borderDownColor: '#ef4444',
+        wickUpColor: '#10b981', wickDownColor: '#ef4444'
+      });
+
+      window.addEventListener('resize', () => {
+        chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
+      });
+      loadChartData(selectedStock);
     }
 
-    window.addEventListener('load', init);
-    window.addEventListener('resize', () => renderChart(currentStock));
+    // Generate 5-minute candle structure with an Order Block Retest
+    function loadChartData(stk) {
+      const data = [];
+      const bp = stk.basePrice;
+      const startTime = Math.floor(new Date().setHours(9, 15, 0, 0) / 1000);
+
+      // 1. Morning move into Order Block
+      data.push({ time: startTime, open: bp - 10, high: bp + 5, low: bp - 12, close: bp + 2 });
+      data.push({ time: startTime + 300, open: bp + 2, high: stk.obHigh, low: bp, close: stk.obHigh - 1 }); // The Order Block candle
+
+      // 2. Aggressive breakdown
+      data.push({ time: startTime + 600, open: stk.obHigh - 1, high: stk.obHigh, low: bp - 25, close: bp - 22 });
+      data.push({ time: startTime + 900, open: bp - 22, high: bp - 15, low: bp - 35, close: bp - 32 });
+
+      // 3. Retest into bottom of Order Block
+      data.push({ time: startTime + 1200, open: bp - 32, high: stk.obLow, low: bp - 33, close: stk.obLow - 2 }); // Retest hit
+      data.push({ time: startTime + 1500, open: stk.obLow - 2, high: stk.obLow, low: bp - 45, close: bp - 42 }); // Drop
+
+      // 4. Continued move down towards LTP
+      data.push({ time: startTime + 1800, open: bp - 42, high: bp - 40, low: bp - 55, close: stk.ltp + 5 });
+      data.push({ time: startTime + 2100, open: stk.ltp + 5, high: stk.ltp + 7, low: stk.ltp - 2, close: stk.ltp });
+
+      candleSeries.setData(data);
+
+      // Draw horizontal lines marking the Order Block Zone
+      if (obZoneLine1) candleSeries.removePriceLine(obZoneLine1);
+      if (obZoneLine2) candleSeries.removePriceLine(obZoneLine2);
+
+      obZoneLine1 = candleSeries.createPriceLine({
+        price: stk.obHigh, color: stk.dir === 'bear' ? '#ef4444' : '#10b981',
+        lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true, title: 'OB High'
+      });
+
+      obZoneLine2 = candleSeries.createPriceLine({
+        price: stk.obLow, color: stk.dir === 'bear' ? '#ef4444' : '#10b981',
+        lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true, title: 'OB Low'
+      });
+
+      chart.timeScale().fitContent();
+    }
+
+    // Draw the multi-stock Liquidity Flow (Left Panel Canvas)
+    function drawLiquidityFlow() {
+      const canvas = document.getElementById('flowCanvas');
+      const ctx = canvas.getContext('2d');
+      const w = canvas.parentElement.clientWidth;
+      const h = canvas.parentElement.clientHeight;
+      canvas.width = w; canvas.height = h;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Horizontal reference axis (0.75 and 200 EMA threshold)
+      ctx.strokeStyle = '#d0d7cb';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(0, h * 0.35); ctx.lineTo(w, h * 0.35);
+      ctx.moveTo(0, h * 0.65); ctx.lineTo(w, h * 0.65);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw 30+ subtle cascading red flow lines downwards (Bearish market drift)
+      for (let i = 0; i < 28; i++) {
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.22)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(10, h * 0.35 + (Math.random() * 20 - 10));
+        let cx1 = w * 0.4;
+        let cy1 = h * 0.45 + (i * 12);
+        let endX = w - 15;
+        let endY = h * 0.55 + (i * 13) + (Math.random() * 25);
+        ctx.bezierCurveTo(cx1, cy1, w * 0.7, endY - 10, endX, Math.min(endY, h - 10));
+        ctx.stroke();
+      }
+
+      // Draw fewer green lines moving upwards (31 Bullish stocks)
+      for (let j = 0; j < 8; j++) {
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.35)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(10, h * 0.35);
+        ctx.bezierCurveTo(w * 0.4, h * 0.30 - (j * 8), w * 0.7, h * 0.22 - (j * 10), w - 15, h * 0.18 - (j * 6));
+        ctx.stroke();
+      }
+    }
+
+    window.addEventListener('load', () => {
+      renderGrids();
+      initChart();
+      drawLiquidityFlow();
+    });
+    window.addEventListener('resize', drawLiquidityFlow);
   </script>
 </body>
 </html>
